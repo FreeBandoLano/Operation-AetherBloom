@@ -23,7 +23,7 @@ Key Features
   Analyzes usage data to detect patterns, including high-use periods and potential asthma triggers.
   Provides visual insights that aid in treatment adjustments and proactive management.
 5. User-Friendly Mobile App Interface
-  An intuitive app interface developed with MIT App Inventor for easy accessibility.
+  An intuitive app interface developed with Flutter for easy accessibility.
   Allows users to view inhaler usage, check analytics, and manage reminders, all within a streamlined design.
   Future Development
   Enhanced Data Visualization: Improved graphs and analytics for deeper insights.

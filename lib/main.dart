@@ -8,13 +8,15 @@ import 'screens/doctor_portal_screen.dart';
 import 'screens/notification_screen.dart';
 import 'services/medication_service.dart';
 import 'services/notification_service.dart';
+import 'services/bluetooth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final medicationService = MedicationService();
-  final notificationService = NotificationService();
   await medicationService.initialize();
+  final notificationService = NotificationService();
   await notificationService.initialize();
+  final bluetoothService = BluetoothService();
   runApp(const MyApp());
 }
 

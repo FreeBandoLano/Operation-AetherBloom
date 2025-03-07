@@ -1,38 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'usage_screen.dart';
-import 'analytics_screen.dart';
-import 'reminders_screen.dart';
-import 'usage_data.dart';
-import 'dart:async';
-import 'package:http/http.dart' as http; // Import the http package
-import 'dart:convert'; // For JSON decoding
+import 'screens/analytics_screen.dart';
+import 'screens/notification_history_screen.dart';
+import 'screens/reminders_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/usage_screen.dart';
+import 'services/medication_service.dart';
+import 'services/notification_service.dart';
 
-// Entry point of the application
-void main() {
-  runApp(ProjectAetherBloomApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final medicationService = MedicationService();
+  final notificationService = NotificationService();
+  await medicationService.initialize();
+  await notificationService.initialize();
+  runApp(const MyApp());
 }
 
-// Root widget for the Project AetherBloom app
-class ProjectAetherBloomApp extends StatelessWidget {
-  const ProjectAetherBloomApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Project AetherBloom',
+      title: 'AetherBloom',
       theme: ThemeData(
-        primarySwatch: Colors.pink, // Primary color for the app theme
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: HomeScreen(), // Set HomeScreen as the initial screen
+      home: const HomeScreen(),
     );
   }
 }
 
-// Define the MethodChannel for Python integration
-const MethodChannel _channel = MethodChannel('com.example.project_aetherbloom/data_channel');
-
-// HomeScreen widget that displays the main navigation options
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -40,39 +39,90 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Welcome to Project AetherBloom'),
+        title: const Text('AetherBloom'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            NavigationCard(
-              label: 'Usage',
-              icon: Icons.track_changes,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => UsageScreen()),
-                );
-              },
-            ),
-            NavigationCard(
-              label: 'Analytics',
-              icon: Icons.analytics,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AnalyticsScreen()),
-                );
-              },
-            ),
-            NavigationCard(
-              label: 'Reminders',
+            _FeatureCard(
+              title: 'Reminders',
+              description: 'Set up and manage your medication reminders',
               icon: Icons.alarm,
+              gradient: const LinearGradient(
+                colors: [Colors.blue, Colors.lightBlueAccent],
+              ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => RemindersScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const RemindersScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Usage Tracking',
+              description: 'Track your medication usage and adherence',
+              icon: Icons.calendar_today,
+              gradient: const LinearGradient(
+                colors: [Colors.green, Colors.lightGreen],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UsageScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Analytics',
+              description: 'View insights about your medication usage',
+              icon: Icons.bar_chart,
+              gradient: const LinearGradient(
+                colors: [Colors.purple, Colors.purpleAccent],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AnalyticsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Notification History',
+              description: 'View past notifications and reminders',
+              icon: Icons.notifications,
+              gradient: const LinearGradient(
+                colors: [Colors.orange, Colors.amber],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationHistoryScreen(),
+                  ),
                 );
               },
             ),
@@ -83,110 +133,66 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// Custom reusable card widget for navigation within the app
-class NavigationCard extends StatelessWidget {
-  final String label; // Label for the card
-  final IconData icon; // Icon for the card
-  final VoidCallback onTap; // Action when the card is tapped
+class _FeatureCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Gradient gradient;
+  final VoidCallback onTap;
 
-  const NavigationCard({super.key, required this.label, required this.icon, required this.onTap});
+  const _FeatureCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 25),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.pink),
-        title: Text(label, style: const TextStyle(fontSize: 18)),
-        onTap: onTap,
+      elevation: 4.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
       ),
-    );
-  }
-}
-
-// Analytics screen that displays usage data analysis
-class AnalyticsScreen extends StatefulWidget {
-  @override
-  _AnalyticsScreenState createState() => _AnalyticsScreenState();
-}
-
-class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  List<UsageData> _usageDataList = []; // Store usage data for analytics
-  Timer? _dataFetchTimer; // Timer to periodically fetch data
-
-  @override
-  void initState() {
-    super.initState();
-    _startDataFetchLoop(); // Start periodic data fetching
-  }
-
-  // Start periodic data fetch from the Python server
-  void _startDataFetchLoop() {
-    _dataFetchTimer = Timer.periodic(Duration(seconds: 5), (timer) {
-      fetchDataFromPython();
-    });
-  }
-
-  // Function to fetch data from Python
-  Future<void> fetchDataFromPython() async {
-    print("Attempting to fetch data from Python...");
-    try {
-      // Replace the MethodChannel call with an HTTP GET request
-      final response = await http.get(Uri.parse('http://127.0.0.1:5000/fetchData'));
-
-      if (response.statusCode == 200) {
-        // If the server responds successfully, decode the JSON data
-        print("Data received from Python: ${response.body}");
-
-        final Map<String, dynamic> data = jsonDecode(response.body);
-
-        // Parse the data correctly
-        final usageData = UsageData(
-          inhalerUseCount: data['inhalerUseCount'],
-          timestamp: DateTime.parse(data['timestamp']),
-          notes: data['notes'],
-        );
-
-        setState(() {
-          _usageDataList = [usageData];
-        });
-
-        print("Updated _usageDataList: $_usageDataList");
-      } else {
-        print("Failed to fetch data from Python, status code: ${response.statusCode}");
-      }
-    } on Exception catch (e) {
-      print("Error fetching data: $e");
-    }
-  }
-
-
-  @override
-  void dispose() {
-    _dataFetchTimer?.cancel(); // Cancel the timer on dispose
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    print("AnalyticsScreen build method called");
-    return Scaffold(
-      appBar: AppBar(title: Text('Analytics')),
-      body: _usageDataList.isEmpty
-          ? Center(child: Text('No data available'))
-          : ListView.builder(
-              itemCount: _usageDataList.length,
-              itemBuilder: (context, index) {
-                final usage = _usageDataList[index];
-                return ListTile(
-                  title: Text('Inhaler Usage Count: ${usage.inhalerUseCount}'),
-                  subtitle: Text('Date: ${usage.timestamp}'),
-                  trailing: usage.notes.isNotEmpty
-                      ? Text('Notes: ${usage.notes}')
-                      : null,
-                );
-              },
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16.0),
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                icon,
+                size: 32.0,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 16.0),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8.0),
+              Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

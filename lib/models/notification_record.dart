@@ -1,7 +1,10 @@
+/// Status of a notification
 enum NotificationStatus {
-  sent,
   scheduled,
+  sent,
   cancelled,
+  failed,
+  info,
 }
 
 class NotificationRecord {

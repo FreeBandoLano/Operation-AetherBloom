@@ -117,4 +117,40 @@ class NotificationService {
       print('Error cancelling reminder: $e');
     }
   }
+
+  Future<void> showMessage(String title, String message) async {
+    try {
+      // Display a local notification
+      await _historyService.addRecord(
+        NotificationRecord(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: title,
+          description: message,
+          timestamp: DateTime.now(),
+          status: NotificationStatus.info,
+        ),
+      );
+      
+      // Send to Python server if available
+      try {
+        final response = await http.post(
+          Uri.parse('$_serverUrl/notify'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'title': title,
+            'message': message,
+            'duration': 3
+          }),
+        );
+        
+        if (response.statusCode != 200) {
+          print('Failed to send notification: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Error sending notification: $e');
+      }
+    } catch (e) {
+      print('Error showing message: $e');
+    }
+  }
 } 

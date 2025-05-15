@@ -11,8 +11,13 @@ timeout /t 2
 cd ..
 start website\index.html
 
+echo Starting Bluetooth sensor monitor...
+rem Ensure we are in the project root where sensor_monitor.py is located
+rem cd /d C:\FlutterProjects\Aetherbloom  <- This might be redundant if already in root after cd ..
+start "Sensor Monitor" cmd /k python sensor_monitor.py
+
 echo Opening Flutter app...
 cd app
-start cmd /k flutter run
+start "Flutter App" cmd /k flutter run
 
 echo Done!

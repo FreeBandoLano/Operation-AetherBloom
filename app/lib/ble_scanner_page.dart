@@ -31,7 +31,7 @@ class _BleScannerPageState extends State<BleScannerPage> {
   StreamSubscription<BluetoothConnectionState>? _connectionStateSubscription;
   BluetoothConnectionState _connectionState = BluetoothConnectionState.disconnected;
   StreamSubscription<List<int>>? _valueSubscription;
-  List<String> _receivedData = [];
+  final List<String> _receivedData = [];
 
   @override
   void initState() {
@@ -372,7 +372,7 @@ class _BleScannerPageState extends State<BleScannerPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('BLE Scanner'),
-        actions: [
+        actions: const [
           // Optional: Add a button to manually request permissions if needed
           // IconButton(icon: Icon(Icons.shield_outlined), onPressed: _requestPermissions)
         ],

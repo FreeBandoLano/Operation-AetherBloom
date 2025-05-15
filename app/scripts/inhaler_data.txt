@@ -1,0 +1,21 @@
+Timestamp: 2024-11-04 00:43:30, Dose: Test data: Dose 1 at 20:42
+Timestamp: 2024-11-04 00:43:30, Dose: 2 Inhales
+Timestamp: 2024-11-04 01:23:39, Dose: 1 puff
+Timestamp: 2024-11-04 01:23:42, Dose: 3 puffs
+Timestamp: 2024-11-04 01:24:00, Dose: 69 huffs
+Timestamp: 2024-11-04 01:24:05, Dose: 420 blows
+[Dose]Timestamp: 2024-11-04 01:51:57, Dose: 1
+[Reminder]Timestamp: 2024-11-04 01:52:01, Dose: Take your inhaler!
+[Event]Timestamp: 2024-11-04 01:52:01, Dose: User checked inhaler status
+[Dose]Timestamp: 2024-11-04 01:52:09, Dose: 3
+[Reminder]Timestamp: 2024-11-04 01:52:10, Dose: Take your inhaler!
+[Event]Timestamp: 2024-11-04 01:52:10, Dose: User checked inhaler status
+[Dose]Timestamp: 2024-11-04 01:56:14, Dose: 2 puffs
+[Reminder]Timestamp: 2024-11-04 01:56:18, Dose: Take your inhaler!
+[Event]Timestamp: 2024-11-04 01:56:18, Dose: User checked inhaler status
+[Dose]Timestamp: 2024-11-04 02:08:27, Dose: 1 puff
+[Reminder]Timestamp: 2024-11-04 02:08:28, Dose: Take your inhaler!
+[Event]Timestamp: 2024-11-04 02:08:28, Dose: User checked inhaler status
+[Reminder]Timestamp: 2024-11-04 02:22:18, Dose: Time to take your inhaler!
+[Reminder]Timestamp: 2024-11-04 02:22:39, Dose: Time to take your inhaler!
+[Reminder]Timestamp: 2024-11-04 13:17:45, Dose: Time to take your inhaler!

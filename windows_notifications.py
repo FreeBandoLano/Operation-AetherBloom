@@ -58,7 +58,8 @@ class NotificationManager:
         try:
             logger.info(f"Showing notification - Title: {title}, Message: {message}")
             # Use the working WindowsBalloonTip method
-            WindowsBalloonTip(title, message)
+            # WindowsBalloonTip(title, message) # Temporarily commented out
+            logger.info("Notification display temporarily skipped for debugging.") # Added
             return True
         except Exception as e:
             logger.error(f"Error showing notification: {e}")

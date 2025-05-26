@@ -13,7 +13,7 @@ class NotificationHistoryService {
   NotificationHistoryService._();
 
   Future<void> initialize() async {
-    await _loadHistory();
+    // await _loadHistory(); // Temporarily commented out
   }
 
   Future<void> _loadHistory() async {

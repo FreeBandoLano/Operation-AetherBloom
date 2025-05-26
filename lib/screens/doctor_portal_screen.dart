@@ -1,5 +1,7 @@
+import 'dart:async'; // Added for StreamSubscription
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/bluetooth_service.dart';
 import '../models/notification_record.dart';
 import '../services/notification_history_service.dart';
@@ -27,16 +29,31 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> with SingleTick
   
   List<NotificationRecord> _notificationHistory = [];
   bool _showConnectionStatus = false;
+  StreamSubscription<User?>? _authStateSubscription;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadNotificationHistory();
+
+    // Listen to auth state changes
+    _authStateSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (mounted) { // Ensure the widget is still in the tree
+        setState(() {
+          _isLoggedIn = user != null;
+          if (user == null) {
+            _emailController.clear();
+            _passwordController.clear();
+            _tabController.index = 0;
+          }
+        });
+      }
+    });
   }
 
   Future<void> _loadNotificationHistory() async {
-    var history = await _notificationHistoryService.getNotificationHistory();
+    var history = await _notificationHistoryService.getHistory();
     setState(() {
       _notificationHistory = history;
     });
@@ -47,6 +64,7 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> with SingleTick
     _emailController.dispose();
     _passwordController.dispose();
     _tabController.dispose();
+    _authStateSubscription?.cancel(); // Cancel subscription on dispose
     super.dispose();
   }
 
@@ -58,26 +76,94 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> with SingleTick
       });
 
       try {
-        // This would connect to a real authentication service
-        await Future.delayed(const Duration(seconds: 2)); // Simulate network delay
-        
-        // Demo login - in production, this would validate against a secure backend
-        if (_emailController.text == 'doctor@example.com' && _passwordController.text == 'password123') {
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+        // If login is successful, UserCredential object is returned
+        if (userCredential.user != null) {
           setState(() {
             _isLoggedIn = true;
             _isLoading = false;
           });
+        }
+      } on FirebaseAuthException catch (e) {
+        String message;
+        if (e.code == 'user-not-found') {
+          message = 'No user found for that email.';
+        } else if (e.code == 'wrong-password') {
+          message = 'Wrong password provided.';
+        } else if (e.code == 'invalid-email') {
+          message = 'The email address is not valid.';
+        } else if (e.code == 'too-many-requests') {
+          message = 'Too many login attempts. Please try again later.';
+        } else if (e.code == 'network-request-failed') {
+          message = 'Network error. Please check your connection.';
         } else {
+          message = 'An unexpected error occurred. Please try again.';
+        }
+        setState(() {
+          _errorMessage = message;
+          _isLoading = false;
+        });
+      } catch (e, s) {
+        setState(() {
+          _errorMessage = 'An unexpected error occurred. Please try again.';
+          _isLoading = false;
+        });
+        debugPrint('*****************************************************');
+        debugPrint('********** LOGIN ERROR CAUGHT ***********************');
+        debugPrint('Login Error Object: ${e.toString()}');
+        debugPrint('Login Stack Trace: ${s.toString()}');
+        debugPrint('*****************************************************');
+      }
+    }
+  }
+
+  Future<void> _signUp() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        if (userCredential.user != null) {
           setState(() {
-            _errorMessage = 'Invalid email or password';
+            _isLoggedIn = true;
             _isLoading = false;
           });
         }
-      } catch (e) {
+      } on FirebaseAuthException catch (e) {
+        String message;
+        if (e.code == 'weak-password') {
+          message = 'The password provided is too weak.';
+        } else if (e.code == 'email-already-in-use') {
+          message = 'An account already exists for that email.';
+        } else if (e.code == 'invalid-email') {
+          message = 'The email address is not valid.';
+        } else {
+          message = 'An unexpected error occurred during sign-up.';
+        }
         setState(() {
-          _errorMessage = 'An error occurred: $e';
+          _errorMessage = message;
           _isLoading = false;
         });
+      } catch (e, s) {
+        setState(() {
+          _errorMessage = 'An unexpected error occurred. Please try again.';
+          _isLoading = false;
+        });
+        debugPrint('*****************************************************');
+        debugPrint('********** SIGNUP ERROR CAUGHT **********************');
+        debugPrint('Signup Error Object: ${e.toString()}');
+        debugPrint('Signup Stack Trace: ${s.toString()}');
+        debugPrint('*****************************************************');
       }
     }
   }
@@ -91,12 +177,8 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> with SingleTick
           if (_isLoggedIn)
             IconButton(
               icon: const Icon(Icons.exit_to_app),
-              onPressed: () {
-                setState(() {
-                  _isLoggedIn = false;
-                  _emailController.clear();
-                  _passwordController.clear();
-                });
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
               },
               tooltip: 'Logout',
             ),
@@ -220,6 +302,14 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> with SingleTick
                 },
                 child: const Text('Forgot password?'),
               ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  // TODO: Navigate to a sign-up screen or show a sign-up dialog
+                  _signUp(); // Placeholder for now
+                },
+                child: const Text('Don\'t have an account? Sign Up'),
+              ),
             ],
           ),
         ),
@@ -265,7 +355,7 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> with SingleTick
                         barTouchData: BarTouchData(
                           enabled: true,
                           touchTooltipData: BarTouchTooltipData(
-                            tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
+                            getTooltipColor: (BarChartGroupData group) => Colors.blueGrey.withOpacity(0.8),
                           ),
                         ),
                         titlesData: FlTitlesData(
@@ -488,14 +578,7 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> with SingleTick
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '${(patient['adherence'] as double * 100).round()}%',
-                          style: TextStyle(
-                            color: _getAdherenceColor(
-                                patient['adherence'] as double),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text("TESTING"),
                       ],
                     ),
                     onTap: () {

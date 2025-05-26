@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/notification_history_screen.dart';
 import 'screens/reminders_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/usage_screen.dart';
 import 'screens/doctor_portal_screen.dart';
-import 'screens/notification_screen.dart';
 import 'services/medication_service.dart';
 import 'services/notification_service.dart';
-import 'services/bluetooth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final medicationService = MedicationService();
-  await medicationService.initialize();
-  final notificationService = NotificationService();
-  await notificationService.initialize();
-  final bluetoothService = BluetoothService();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Initialize services (temporarily commented out for Android testing)
+  // final medicationService = MedicationService();
+  // final notificationService = NotificationService();
+  // await medicationService.initialize();
+  // await notificationService.initialize();
+  
   runApp(const MyApp());
 }
 
@@ -36,21 +43,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +52,18 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('AetherBloom'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.medical_services),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DoctorPortalScreen(),
+                ),
+              );
+            },
+            tooltip: 'Doctor Portal',
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -71,183 +77,123 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _buildMainContent(),
-    );
-  }
-
-  Widget _buildMainContent() {
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverList(
-          delegate: SliverChildListDelegate([
-            Padding(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _FeatureCard(
+              title: 'Doctor Portal',
+              description: 'Access healthcare provider dashboard',
+              icon: Icons.local_hospital,
+              gradient: const LinearGradient(
+                colors: [Colors.red, Colors.redAccent],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DoctorPortalScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Reminders',
+              description: 'Set up and manage your medication reminders',
+              icon: Icons.alarm,
+              gradient: const LinearGradient(
+                colors: [Colors.blue, Colors.lightBlueAccent],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RemindersScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Usage Tracking',
+              description: 'Track your medication usage and adherence',
+              icon: Icons.calendar_today,
+              gradient: const LinearGradient(
+                colors: [Colors.green, Colors.lightGreen],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UsageScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Analytics',
+              description: 'View insights about your medication usage',
+              icon: Icons.bar_chart,
+              gradient: const LinearGradient(
+                colors: [Colors.purple, Colors.purpleAccent],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AnalyticsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Notification History',
+              description: 'View past notifications and reminders',
+              icon: Icons.notifications,
+              gradient: const LinearGradient(
+                colors: [Colors.orange, Colors.amber],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationHistoryScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            // Bluetooth functionality will be added later in Phase 3
+            Container(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(16.0),
+                border: Border.all(color: Colors.grey[400]!),
+              ),
+              child: const Column(
                 children: [
-                  const Text(
-                    'AetherBloom',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Icon(Icons.bluetooth_disabled, size: 32.0, color: Colors.grey),
+                  SizedBox(height: 8.0),
+                  Text(
+                    'Bluetooth Device Connection',
+                    style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Colors.grey),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Smart Medication Management',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _FeatureCard(
-                    title: 'Notifications',
-                    description: 'Test and manage your medication notifications',
-                    icon: Icons.notifications_active,
-                    gradient: const LinearGradient(
-                      colors: [Colors.purple, Colors.deepPurple],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _FeatureCard(
-                    title: 'Analytics',
-                    description: 'View your medication usage patterns',
-                    icon: Icons.insert_chart,
-                    gradient: const LinearGradient(
-                      colors: [Colors.orange, Colors.deepOrange],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AnalyticsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _FeatureCard(
-                    title: 'Notification History',
-                    description: 'View your past notifications',
-                    icon: Icons.history,
-                    gradient: const LinearGradient(
-                      colors: [Colors.green, Colors.teal],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _FeatureCard(
-                    title: 'Usage',
-                    description: 'Track your medication consumption',
-                    icon: Icons.medication,
-                    gradient: const LinearGradient(
-                      colors: [Colors.blue, Colors.cyan],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const UsageScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _FeatureCard(
-                    title: 'Reminders',
-                    description: 'Set up medication reminders',
-                    icon: Icons.alarm,
-                    gradient: const LinearGradient(
-                      colors: [Colors.red, Colors.redAccent],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RemindersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _FeatureCard(
-                    title: 'Smart Inhaler Connection',
-                    description: 'Connect to your BLE 4.0 Smart Inhaler',
-                    icon: Icons.bluetooth,
-                    gradient: const LinearGradient(
-                      colors: [Colors.indigo, Colors.blue],
-                    ),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Smart Inhaler'),
-                          content: const Text(
-                            'Searching for nearby Smart Inhalers...\n\nMake sure your device is turned on and in pairing mode.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Connected to Smart Inhaler'),
-                                  ),
-                                );
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('Connect'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _FeatureCard(
-                    title: 'Doctor Portal',
-                    description: 'Healthcare provider access',
-                    icon: Icons.medical_services,
-                    gradient: const LinearGradient(
-                      colors: [Colors.teal, Colors.green],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DoctorPortalScreen(),
-                        ),
-                      );
-                    },
+                  SizedBox(height: 4.0),
+                  Text(
+                    'Available in Phase 3 (Hardware Integration)',
+                    style: TextStyle(fontSize: 14.0, color: Colors.grey),
                   ),
                 ],
               ),
             ),
-          ]),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

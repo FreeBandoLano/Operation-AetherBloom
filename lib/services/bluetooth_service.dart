@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 import '../models/medication.dart';
 import 'notification_service.dart';
 
@@ -23,7 +23,6 @@ class BluetoothService {
   BluetoothService._();
 
   // Core dependencies
-  final FlutterBluePlus _flutterBlue = FlutterBluePlus.instance;  // BLE plugin
   final NotificationService _notificationService = NotificationService();  // For user alerts
   
   // Configuration for Smart Inhaler device identification
@@ -40,9 +39,9 @@ class BluetoothService {
   final String _inhalerCharacteristicUuid = '2A1C';  // Temperature Measurement characteristic example
   
   // State tracking variables
-  StreamSubscription<List<ScanResult>>? _scanSubscription;  // Manages the scan result stream
-  BluetoothDevice? _connectedDevice;  // Currently connected inhaler device
-  BluetoothCharacteristic? _inhalerCharacteristic;  // Characteristic for inhaler usage data
+  StreamSubscription<List<fbp.ScanResult>>? _scanSubscription;  // Manages the scan result stream
+  fbp.BluetoothDevice? _connectedDevice;  // Currently connected inhaler device
+  fbp.BluetoothCharacteristic? _inhalerCharacteristic;  // Characteristic for inhaler usage data
   bool _isScanning = false;  // Flag indicating if scanning is in progress
   bool _isConnected = false;  // Flag indicating if connected to an inhaler
   
@@ -74,7 +73,7 @@ class BluetoothService {
       _isScanning = true;
       
       // Check if Bluetooth is enabled on the device
-      if (await _flutterBlue.isOn == false) {
+      if (await fbp.FlutterBluePlus.adapterState.first != fbp.BluetoothAdapterState.on) {
         _notificationService.showMessage(
           'Bluetooth is turned off',
           'Please turn on Bluetooth to connect to your inhaler.'
@@ -84,13 +83,13 @@ class BluetoothService {
       }
       
       // Begin scanning for devices with a 30-second timeout
-      await _flutterBlue.startScan(timeout: Duration(seconds: 30));
+      await fbp.FlutterBluePlus.startScan(timeout: const Duration(seconds: 30));
       
       // Listen for scan results and look for matching devices
-      _scanSubscription = _flutterBlue.scanResults.listen((results) {
-        for (ScanResult result in results) {
+      _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
+        for (fbp.ScanResult result in results) {
           // Check if the device name matches our inhaler name prefix
-          if (result.device.name.startsWith(_inhalerNamePrefix)) {
+          if (result.device.platformName.startsWith(_inhalerNamePrefix)) {
             // Found a matching device, attempt to connect
             _connectToDevice(result.device);
             stopScan(); // Stop scanning once we find a device
@@ -126,7 +125,7 @@ class BluetoothService {
     
     try {
       // Stop the Bluetooth scan
-      await _flutterBlue.stopScan();
+      await fbp.FlutterBluePlus.stopScan();
       
       // Clean up the scan results subscription
       _scanSubscription?.cancel();
@@ -148,7 +147,7 @@ class BluetoothService {
   /// 2. Discovers services and characteristics
   /// 3. Sets up notifications for inhaler usage data
   /// 4. Updates connection state for the app
-  Future<void> _connectToDevice(BluetoothDevice device) async {
+  Future<void> _connectToDevice(fbp.BluetoothDevice device) async {
     try {
       // Attempt to connect to the device
       await device.connect();
@@ -161,30 +160,31 @@ class BluetoothService {
       // Notify the user about successful connection
       _notificationService.showMessage(
         'Connected',
-        'Connected to ${device.name}'
+        'Connected to ${device.platformName}'
       );
       
       // Discover services offered by the device
-      List<BluetoothService> services = await device.discoverServices();
+      List<fbp.BluetoothService> services = await device.discoverServices();
       
       // Find the specific service and characteristic for inhaler data
-      for (BluetoothService service in services) {
+      for (fbp.BluetoothService service in services) {
         // Check if this service matches our target inhaler service UUID
-        if (service.uuid.toString().toUpperCase().contains(_inhalerServiceUuid)) {
-          for (BluetoothCharacteristic characteristic in service.characteristics) {
+        if (service.uuid.str.toUpperCase().contains(_inhalerServiceUuid)) {
+          for (fbp.BluetoothCharacteristic characteristic in service.characteristics) {
             // Check if this characteristic matches our target inhaler characteristic UUID
-            if (characteristic.uuid.toString().toUpperCase().contains(_inhalerCharacteristicUuid)) {
+            if (characteristic.uuid.str.toUpperCase().contains(_inhalerCharacteristicUuid)) {
               _inhalerCharacteristic = characteristic;
               
               // Set up notifications from the characteristic
               await characteristic.setNotifyValue(true);
               
               // Listen for incoming data from the inhaler
-              characteristic.value.listen(_onInhalerDataReceived);
+              characteristic.onValueReceived.listen(_onInhalerDataReceived);
               
               break;
             }
           }
+          if (_inhalerCharacteristic != null) break; // Break outer loop if characteristic found
         }
       }
       
@@ -201,7 +201,7 @@ class BluetoothService {
       _isConnectedStreamController.add(false);
       _notificationService.showMessage(
         'Connection Error',
-        'Failed to connect to ${device.name}: $e'
+        'Failed to connect to ${device.platformName}: $e'
       );
     }
   }
@@ -300,7 +300,7 @@ class BluetoothService {
   bool get isScanning => _isScanning;
   
   /// Get the currently connected device (if any)
-  BluetoothDevice? get connectedDevice => _connectedDevice;
+  fbp.BluetoothDevice? get connectedDevice => _connectedDevice;
 
   /// Clean up resources used by this service
   /// 

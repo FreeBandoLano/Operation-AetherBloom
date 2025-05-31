@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Add this for kIsWeb and defaultTargetPlatform
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'test_firebase_auth.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/notification_history_screen.dart';
 import 'screens/reminders_screen.dart';
@@ -13,10 +15,27 @@ import 'services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Initialize Firebase (web and mobile platforms)
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) {
+    try {
+      print('🔥 Starting Firebase initialization...');
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('🔥 Firebase initialized successfully!');
+      print('🔥 Ready to test authentication!');
+      if (kIsWeb) {
+        print('🌐 Running on web - Firebase auth fully supported!');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Firebase initialization failed: $e');
+      print('❌ Stack trace: $stackTrace');
+    }
+  } else {
+    print('⚠️ Firebase skipped on Windows (C++ SDK build issues)');
+    print('🚀 Use: flutter run -d edge (for web testing)');
+    print('🤖 Or: flutter run -d android (for Android testing)');
+  }
   
   // Initialize services (temporarily commented out for Android testing)
   // final medicationService = MedicationService();
@@ -52,6 +71,19 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('AetherBloom'),
         actions: [
+          // Firebase test (works on web/Android)
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FirebaseAuthTest(),
+                ),
+              );
+            },
+            tooltip: 'Firebase Test',
+          ),
           IconButton(
             icon: const Icon(Icons.medical_services),
             onPressed: () {
@@ -82,6 +114,24 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Firebase test (works on web/Android)
+            _FeatureCard(
+              title: 'Firebase Test',
+              description: 'Test Firebase authentication (web/Android only)',
+              icon: Icons.bug_report,
+              gradient: const LinearGradient(
+                colors: [Colors.deepOrange, Colors.orange],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const FirebaseAuthTest(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
             _FeatureCard(
               title: 'Doctor Portal',
               description: 'Access healthcare provider dashboard',

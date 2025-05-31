@@ -155,7 +155,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                           value: adherenceRate,
                                           backgroundColor: Theme.of(context)
                                               .colorScheme
-                                              .surfaceVariant,
+                                              .surfaceContainerHighest,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
                                             adherenceRate >= 0.8

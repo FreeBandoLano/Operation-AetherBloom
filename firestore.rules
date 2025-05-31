@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if user is a doctor
+    function isDoctor() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'doctor';
+    }
+    
+    // Check if user is a patient
+    function isPatient() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'patient';
+    }
+    
+    // Check if doctor has access to patient data
+    function doctorHasPatientAccess(patientId) {
+      return isDoctor() && 
+             get(/databases/$(database)/documents/users/$(patientId)).data.assignedDoctorId == request.auth.uid;
+    }
+    
+    // ==================== USER PROFILES ====================
+    
+    match /users/{userId} {
+      // Users can read and write their own profile
+      allow read, write: if isOwner(userId);
+      
+      // Doctors can read profiles of their assigned patients
+      allow read: if isDoctor() && 
+                     resource.data.userType == 'patient' && 
+                     resource.data.assignedDoctorId == request.auth.uid;
+      
+      // Patients can read profiles of their assigned doctor
+      allow read: if isPatient() && 
+                     resource.data.userType == 'doctor' && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedDoctorId == userId;
+      
+      // Only allow creation of user profiles during signup
+      allow create: if isOwner(userId) && 
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.email == request.auth.token.email;
+                       
+      // Prevent deletion of user profiles (use soft delete instead)
+      allow delete: if false;
+    }
+    
+    // ==================== IOT DEVICES ====================
+    
+    match /iot_devices/{deviceId} {
+      // Patients can read/write their own devices
+      allow read, write: if isAuthenticated() && 
+                            resource.data.patientId == request.auth.uid;
+      
+      // Doctors can read devices of their patients
+      allow read: if doctorHasPatientAccess(resource.data.patientId);
+      
+      // Doctors can update device status for their patients' devices
+      allow update: if doctorHasPatientAccess(resource.data.patientId) &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['status', 'batteryLevel', 'lastConnected', 'updatedAt']);
+      
+      // Only patients can create devices for themselves
+      allow create: if isAuthenticated() && 
+                       request.resource.data.patientId == request.auth.uid;
+    }
+    
+    // ==================== INHALER USAGE DATA ====================
+    
+    match /inhaler_usage/{usageId} {
+      // Patients can read their own usage data
+      allow read: if isAuthenticated() && 
+                     resource.data.patientId == request.auth.uid;
+      
+      // Doctors can read usage data of their patients
+      allow read: if doctorHasPatientAccess(resource.data.patientId);
+      
+      // Only authenticated users can create usage data for themselves
+      allow create: if isAuthenticated() && 
+                       request.resource.data.patientId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['deviceId', 'patientId', 'usageTime', 
+                                                           'dosage', 'medicationType']) &&
+                       request.resource.data.usageTime is timestamp;
+      
+      // Prevent modification of historical usage data
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // ==================== NOTIFICATION HISTORY ====================
+    
+    match /notification_history/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Users can mark their own notifications as read
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['read', 'readAt']);
+      
+      // System can create notifications (handled by backend services)
+      allow create: if isAuthenticated();
+      
+      // Prevent deletion of notification history
+      allow delete: if false;
+    }
+    
+    // ==================== ANALYTICS COLLECTIONS (Future) ====================
+    
+    match /usage_analytics/{analyticsId} {
+      // Only doctors can read analytics
+      allow read: if isDoctor();
+      
+      // Only system/backend can write analytics
+      allow write: if false; // Will be handled by Cloud Functions
+    }
+    
+    match /system_logs/{logId} {
+      // Only system can access logs
+      allow read, write: if false;
+    }
+    
+    // ==================== DEFAULT DENY ====================
+    
+    // Deny access to all other documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

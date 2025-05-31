@@ -110,9 +110,9 @@ class SettingsService {
     
     if (jsonString == null) {
       // Default settings
-      _cachedSettings = NotificationSettings(
-        quietHoursStart: const TimeOfDay(hour: 22, minute: 0),
-        quietHoursEnd: const TimeOfDay(hour: 7, minute: 0),
+      _cachedSettings = const NotificationSettings(
+        quietHoursStart: TimeOfDay(hour: 22, minute: 0),
+        quietHoursEnd: TimeOfDay(hour: 7, minute: 0),
       );
       return _cachedSettings!;
     }
@@ -124,9 +124,9 @@ class SettingsService {
     } catch (e) {
       print('Error loading settings: $e');
       // Return default settings on error
-      _cachedSettings = NotificationSettings(
-        quietHoursStart: const TimeOfDay(hour: 22, minute: 0),
-        quietHoursEnd: const TimeOfDay(hour: 7, minute: 0),
+      _cachedSettings = const NotificationSettings(
+        quietHoursStart: TimeOfDay(hour: 22, minute: 0),
+        quietHoursEnd: TimeOfDay(hour: 7, minute: 0),
       );
       return _cachedSettings!;
     }

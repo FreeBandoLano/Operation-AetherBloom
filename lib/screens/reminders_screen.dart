@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/medication.dart';
-import '../models/reminder.dart';
 import '../services/medication_service.dart';
 import '../services/notification_service.dart';
 import 'add_medication_screen.dart';

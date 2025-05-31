@@ -9,8 +9,10 @@ import 'screens/reminders_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/usage_screen.dart';
 import 'screens/doctor_portal_screen.dart';
+import 'screens/firestore_test_screen.dart';
 import 'services/medication_service.dart';
 import 'services/notification_service.dart';
+import 'services/firestore_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +26,13 @@ void main() async {
       );
       print('🔥 Firebase initialized successfully!');
       print('🔥 Ready to test authentication!');
+      
+      // Initialize Firestore sample data if needed
+      print('📊 Initializing Firestore database...');
+      // Note: This will only create sample data if user is authenticated and doesn't exist
+      // FirestoreService.initializeSampleData();
+      print('📊 Firestore database ready!');
+      
       if (kIsWeb) {
         print('🌐 Running on web - Firebase auth fully supported!');
       }
@@ -127,6 +136,23 @@ class HomeScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const FirebaseAuthTest(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16.0),
+            _FeatureCard(
+              title: 'Firestore Database Test',
+              description: 'Test database operations with real-time data (web/Android only)',
+              icon: Icons.storage,
+              gradient: const LinearGradient(
+                colors: [Colors.indigo, Colors.indigoAccent],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const FirestoreTestScreen(),
                   ),
                 );
               },

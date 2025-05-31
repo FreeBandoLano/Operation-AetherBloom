@@ -69,10 +69,10 @@ class SchedulingService {
     }
 
     // Get existing notifications in the next hour
-    final existingNotifications = await _getUpcomingNotifications(Duration(hours: 1));
+    final existingNotifications = await _getUpcomingNotifications(const Duration(hours: 1));
     if (existingNotifications.length >= _maxNotificationsPerHour) {
       // Too many notifications in the next hour, delay by 15 minutes
-      return DateTime.now().add(Duration(minutes: 15));
+      return DateTime.now().add(const Duration(minutes: 15));
     }
 
     // Use the original scheduled time

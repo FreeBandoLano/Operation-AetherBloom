@@ -47,7 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               hourMinuteTextColor: Theme.of(context).colorScheme.onSurface,
               dayPeriodTextColor: Theme.of(context).colorScheme.onSurface,
               dialHandColor: Theme.of(context).colorScheme.primary,
-              dialBackgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              dialBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
           ),
           child: child!,

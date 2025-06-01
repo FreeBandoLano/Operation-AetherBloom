@@ -471,4 +471,147 @@ class FirestoreService {
       throw e;
     }
   }
+
+  /// Update user's FCM token for push notifications
+  static Future<void> updateUserFCMToken(String userId, String fcmToken) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'fcmToken': fcmToken,
+        'lastTokenUpdate': FieldValue.serverTimestamp(),
+      });
+      print('✅ FCM token updated for user: $userId');
+    } catch (e) {
+      print('❌ Error updating FCM token: $e');
+      throw e;
+    }
+  }
+
+  /// Get FCM token for a specific user
+  static Future<String?> getUserFCMToken(String userId) async {
+    try {
+      DocumentSnapshot doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return data['fcmToken'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting FCM token: $e');
+      return null;
+    }
+  }
+
+  /// Get FCM tokens for all patients assigned to a doctor
+  static Future<List<String>> getDoctorPatientsFCMTokens(String doctorId) async {
+    try {
+      QuerySnapshot patients = await _firestore
+          .collection('users')
+          .where('userType', isEqualTo: 'patient')
+          .where('assignedDoctorId', isEqualTo: doctorId)
+          .get();
+
+      List<String> tokens = [];
+      for (var doc in patients.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        String? token = data['fcmToken'] as String?;
+        if (token != null && token.isNotEmpty) {
+          tokens.add(token);
+        }
+      }
+      
+      print('✅ Found ${tokens.length} FCM tokens for doctor $doctorId');
+      return tokens;
+    } catch (e) {
+      print('❌ Error getting patient FCM tokens: $e');
+      return [];
+    }
+  }
+
+  /// Get FCM tokens for all users of a specific type
+  static Future<List<String>> getUserTypesFCMTokens(String userType) async {
+    try {
+      QuerySnapshot users = await _firestore
+          .collection('users')
+          .where('userType', isEqualTo: userType)
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      List<String> tokens = [];
+      for (var doc in users.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        String? token = data['fcmToken'] as String?;
+        if (token != null && token.isNotEmpty) {
+          tokens.add(token);
+        }
+      }
+      
+      print('✅ Found ${tokens.length} FCM tokens for user type: $userType');
+      return tokens;
+    } catch (e) {
+      print('❌ Error getting user type FCM tokens: $e');
+      return [];
+    }
+  }
+
+  /// Get all FCM tokens for broadcasting to all users
+  static Future<List<String>> getAllFCMTokens() async {
+    try {
+      QuerySnapshot users = await _firestore
+          .collection('users')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      List<String> tokens = [];
+      for (var doc in users.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        String? token = data['fcmToken'] as String?;
+        if (token != null && token.isNotEmpty) {
+          tokens.add(token);
+        }
+      }
+      
+      print('✅ Found ${tokens.length} total FCM tokens for broadcasting');
+      return tokens;
+    } catch (e) {
+      print('❌ Error getting all FCM tokens: $e');
+      return [];
+    }
+  }
+
+  /// Remove invalid FCM tokens (called when FCM returns invalid token errors)
+  static Future<void> removeInvalidFCMToken(String fcmToken) async {
+    try {
+      QuerySnapshot users = await _firestore
+          .collection('users')
+          .where('fcmToken', isEqualTo: fcmToken)
+          .get();
+
+      WriteBatch batch = _firestore.batch();
+      for (var doc in users.docs) {
+        batch.update(doc.reference, {
+          'fcmToken': FieldValue.delete(),
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      await batch.commit();
+      print('✅ Removed invalid FCM token: $fcmToken');
+    } catch (e) {
+      print('❌ Error removing invalid FCM token: $e');
+    }
+  }
+
+  /// Clear FCM token for a user (useful for logout)
+  static Future<void> clearUserFCMToken(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'fcmToken': FieldValue.delete(),
+        'lastTokenUpdate': FieldValue.serverTimestamp(),
+      });
+      print('✅ FCM token cleared for user: $userId');
+    } catch (e) {
+      print('❌ Error clearing FCM token: $e');
+      throw e;
+    }
+  }
 } 

@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== DEVELOPMENT RULES ====================
+    // NOTE: These are permissive rules for development/testing
+    // Replace with production rules (firestore.rules) before going live
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // ==================== USER PROFILES ====================
+    
+    match /users/{userId} {
+      // Authenticated users can read any user profile (for testing)
+      allow read: if isAuthenticated();
+      
+      // Users can write their own profile
+      allow write: if isAuthenticated() && isOwner(userId);
+      
+      // Allow creation for testing
+      allow create: if isAuthenticated();
+    }
+    
+    // ==================== IOT DEVICES ====================
+    
+    match /iot_devices/{deviceId} {
+      // Allow authenticated users to read/write all devices (for testing)
+      allow read, write: if isAuthenticated();
+    }
+    
+    // ==================== INHALER USAGE DATA ====================
+    
+    match /inhaler_usage/{usageId} {
+      // Allow authenticated users to read all usage data (for testing)
+      allow read: if isAuthenticated();
+      
+      // Allow authenticated users to create usage data
+      allow create: if isAuthenticated();
+      
+      // Allow updates for testing
+      allow update: if isAuthenticated();
+    }
+    
+    // ==================== NOTIFICATION HISTORY ====================
+    
+    match /notification_history/{notificationId} {
+      // Allow authenticated users full access (for testing)
+      allow read, write: if isAuthenticated();
+    }
+    
+    // ==================== TEST DATA COLLECTIONS ====================
+    
+    match /test_patients/{patientId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /test_doctors/{doctorId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // ==================== DEFAULT ALLOW FOR AUTHENTICATED USERS ====================
+    
+    // Allow authenticated users to access most collections for testing
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+} 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firestore_service.dart';
+import '../setup/test_data_setup.dart';
+import '../screens/notification_test_screen.dart';
 
 class FirestoreTestScreen extends StatefulWidget {
   const FirestoreTestScreen({super.key});
@@ -15,6 +17,7 @@ class _FirestoreTestScreenState extends State<FirestoreTestScreen> {
   bool _isLoading = false;
   DocumentSnapshot? _currentUserProfile;
   List<Map<String, dynamic>> _recentUsageData = [];
+  Map<String, dynamic>? _setupStatus;
 
   @override
   void initState() {
@@ -245,6 +248,39 @@ class _FirestoreTestScreenState extends State<FirestoreTestScreen> {
     }
   }
 
+  /// Set up test data using TestDataSetup class
+  Future<void> _setupTestData() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Setting up test data...';
+    });
+
+    try {
+      await TestDataSetup.initializeTestData();
+      
+      setState(() {
+        _statusMessage = '✅ Test data setup complete!\n'
+            '• Created doctor profile for current user\n'
+            '• Added 3 test patients: John Doe, Jane Smith, Mike Johnson\n'
+            '• Generated 7 days of inhaler usage data\n'
+            '• Set up doctor-patient relationships\n\n'
+            'You can now go to the Doctor Portal and see real patient data!';
+      });
+      
+      // Reload user profile to reflect changes
+      await _loadUserProfile();
+      
+    } catch (e) {
+      setState(() {
+        _statusMessage = '❌ Error setting up test data: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   /// Test basic usage data (no composite index needed)
   Future<void> _testBasicUsageData() async {
     setState(() {
@@ -437,6 +473,29 @@ class _FirestoreTestScreenState extends State<FirestoreTestScreen> {
               icon: Icons.analytics,
               onPressed: _isLoading ? null : _testSimpleAnalytics,
               enabled: user != null,
+            ),
+            
+            _TestButton(
+              title: 'Setup Test Data',
+              subtitle: 'Create test users, patients, and usage data',
+              icon: Icons.build,
+              onPressed: _isLoading ? null : _setupTestData,
+              enabled: user != null,
+            ),
+            
+            _TestButton(
+              title: '🔔 Test Notifications',
+              subtitle: 'Test notification system and reminders',
+              icon: Icons.notifications,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationTestScreen(),
+                  ),
+                );
+              },
+              enabled: true,
             ),
             
             const SizedBox(height: 24),

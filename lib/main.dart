@@ -10,6 +10,7 @@ import 'screens/settings_screen.dart';
 import 'screens/usage_screen.dart';
 import 'screens/doctor_portal_screen.dart';
 import 'screens/firestore_test_screen.dart';
+import 'screens/fcm_registration_test_screen.dart';
 import 'services/medication_service.dart';
 import 'services/notification_service.dart';
 import 'services/firestore_service.dart';
@@ -46,11 +47,19 @@ void main() async {
     print('🤖 Or: flutter run -d android (for Android testing)');
   }
   
-  // Initialize services (temporarily commented out for Android testing)
+  // Initialize services
+  try {
+    print('🔔 Initializing notification service...');
+    final notificationService = NotificationService();
+    await notificationService.initialize();
+    print('🔔 Notification service initialized successfully!');
+  } catch (e) {
+    print('❌ Notification service initialization failed: $e');
+  }
+  
+  // Initialize other services (temporarily commented out for Android testing)
   // final medicationService = MedicationService();
-  // final notificationService = NotificationService();
   // await medicationService.initialize();
-  // await notificationService.initialize();
   
   runApp(const MyApp());
 }
@@ -266,6 +275,28 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 16.0),
+            // Third row
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FirestoreTestScreen()),
+                );
+              },
+              icon: const Icon(Icons.storage),
+              label: const Text('Firestore Test'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FCMRegistrationTestScreen()),
+                );
+              },
+              icon: const Icon(Icons.cloud_sync),
+              label: const Text('FCM Registration'),
             ),
           ],
         ),

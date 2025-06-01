@@ -243,6 +243,48 @@ class FirestoreService {
     return query.snapshots();
   }
 
+  /// Get basic usage data without ordering (no composite index needed)
+  static Future<Map<String, dynamic>> getBasicUsageData({
+    required String patientId,
+  }) async {
+    try {
+      print('🔍 Testing basic usage query (no index required) for patient: $patientId');
+      
+      QuerySnapshot snapshot = await _firestore
+          .collection('inhaler_usage')
+          .where('patientId', isEqualTo: patientId)
+          .limit(10)
+          .get();
+
+      print('✅ Basic query successful! Found ${snapshot.docs.length} records');
+
+      int totalUsages = snapshot.docs.length;
+      double totalDosage = 0;
+      List<Map<String, dynamic>> usageList = [];
+      
+      for (var doc in snapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        totalDosage += (data['dosage'] ?? 0).toDouble();
+        usageList.add({
+          'id': doc.id,
+          'dosage': data['dosage'],
+          'medicationType': data['medicationType'],
+          'usageTime': data['usageTime'],
+        });
+      }
+
+      return {
+        'totalUsages': totalUsages,
+        'totalDosage': totalDosage,
+        'usageList': usageList,
+        'status': 'success',
+      };
+    } catch (e) {
+      print('❌ Error in basic usage query: $e');
+      throw e;
+    }
+  }
+
   /// Get usage analytics for a patient
   static Future<Map<String, dynamic>> getUsageAnalytics({
     required String patientId,

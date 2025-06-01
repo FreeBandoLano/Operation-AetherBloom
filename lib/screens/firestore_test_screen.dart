@@ -245,47 +245,78 @@ class _FirestoreTestScreenState extends State<FirestoreTestScreen> {
     }
   }
 
-  Future<void> _getUsageAnalytics() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() {
-        _statusMessage = 'No authenticated user found!';
-      });
-      return;
-    }
-
+  /// Test basic usage data (no composite index needed)
+  Future<void> _testBasicUsageData() async {
     setState(() {
       _isLoading = true;
-      _statusMessage = 'Calculating usage analytics...';
+      _statusMessage = 'Testing basic usage data (no index required)...';
     });
 
     try {
-      final endDate = DateTime.now();
-      final startDate = endDate.subtract(const Duration(days: 30));
-      
-      final analytics = await FirestoreService.getUsageAnalytics(
-        patientId: user.uid,
-        startDate: startDate,
-        endDate: endDate,
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        setState(() {
+          _statusMessage = '❌ Must be logged in to test usage data';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      Map<String, dynamic> usageData = await FirestoreService.getBasicUsageData(
+        patientId: currentUser.uid,
       );
 
       setState(() {
-        _statusMessage = '''Analytics (Last 30 days):
-• Total usages: ${analytics['totalUsages']}
-• Total dosage: ${analytics['totalDosage']}mg
-• Average daily usage: ${analytics['averageDailyUsage'].toStringAsFixed(1)}
-• Medication types: ${analytics['medicationBreakdown']}''';
+        _statusMessage = '✅ Basic usage data test successful!\n'
+            'Total usages: ${usageData['totalUsages']}\n'
+            'Total dosage: ${usageData['totalDosage']}\n'
+            'Found ${usageData['usageList'].length} usage records';
+        _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _statusMessage = 'Error getting analytics: $e';
-      });
-    } finally {
-      setState(() {
+        _statusMessage = '❌ Error in basic usage data test: $e';
         _isLoading = false;
       });
     }
   }
+
+  /// Test simple analytics (should work with current index)
+  Future<void> _testSimpleAnalytics() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Testing simple analytics...';
+    });
+
+    try {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        setState(() {
+          _statusMessage = '❌ Must be logged in to test analytics';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      Map<String, dynamic> analytics = await FirestoreService.getBasicUsageData(
+        patientId: currentUser.uid,
+      );
+
+      setState(() {
+        _statusMessage = '✅ Simple analytics test successful!\n'
+            'Recent usages: ${analytics['totalUsages']}\n'
+            'Total dosage: ${analytics['totalDosage']}';
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = '❌ Error in simple analytics test: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Test complex analytics (requires composite index)
 
   @override
   Widget build(BuildContext context) {
@@ -393,10 +424,18 @@ class _FirestoreTestScreenState extends State<FirestoreTestScreen> {
             ),
             
             _TestButton(
-              title: 'Get Analytics',
-              subtitle: 'Calculate usage statistics',
+              title: 'Test Basic Usage Data',
+              subtitle: 'Test basic usage data (no index required)',
               icon: Icons.analytics,
-              onPressed: _isLoading ? null : _getUsageAnalytics,
+              onPressed: _isLoading ? null : _testBasicUsageData,
+              enabled: user != null,
+            ),
+            
+            _TestButton(
+              title: 'Test Simple Analytics',
+              subtitle: 'Test simple usage analytics',
+              icon: Icons.analytics,
+              onPressed: _isLoading ? null : _testSimpleAnalytics,
               enabled: user != null,
             ),
             

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Documentation Guide for AetherBloom Project
 /// 
 /// This file provides examples of properly documented code for the

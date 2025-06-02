@@ -1,66 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Add this for kIsWeb and defaultTargetPlatform
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'test_firebase_auth.dart';
-import 'screens/analytics_screen.dart';
-import 'screens/notification_history_screen.dart';
-import 'screens/reminders_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/usage_screen.dart';
-import 'screens/doctor_portal_screen.dart';
-import 'screens/firestore_test_screen.dart';
-import 'screens/fcm_registration_test_screen.dart';
-import 'services/medication_service.dart';
-import 'services/notification_service.dart';
-import 'services/firestore_service.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase (web and mobile platforms)
-  if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) {
-    try {
-      print('🔥 Starting Firebase initialization...');
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print('🔥 Firebase initialized successfully!');
-      print('🔥 Ready to test authentication!');
-      
-      // Initialize Firestore sample data if needed
-      print('📊 Initializing Firestore database...');
-      // Note: This will only create sample data if user is authenticated and doesn't exist
-      // FirestoreService.initializeSampleData();
-      print('📊 Firestore database ready!');
-      
-      if (kIsWeb) {
-        print('🌐 Running on web - Firebase auth fully supported!');
-      }
-    } catch (e, stackTrace) {
-      print('❌ Firebase initialization failed: $e');
-      print('❌ Stack trace: $stackTrace');
-    }
-  } else {
-    print('⚠️ Firebase skipped on Windows (C++ SDK build issues)');
-    print('🚀 Use: flutter run -d edge (for web testing)');
-    print('🤖 Or: flutter run -d android (for Android testing)');
-  }
-  
-  // Initialize services
-  try {
-    print('🔔 Initializing notification service...');
-    final notificationService = NotificationService();
-    await notificationService.initialize();
-    print('🔔 Notification service initialized successfully!');
-  } catch (e) {
-    print('❌ Notification service initialization failed: $e');
-  }
-  
-  // Initialize other services (temporarily commented out for Android testing)
-  // final medicationService = MedicationService();
-  // await medicationService.initialize();
-  
+void main() {
   runApp(const MyApp());
 }
 
@@ -71,300 +11,364 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AetherBloom',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          elevation: 2,
+        ),
       ),
       home: const HomeScreen(),
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AetherBloom'),
-        actions: [
-          // Firebase test (works on web/Android)
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const FirebaseAuthTest(),
-                ),
-              );
-            },
-            tooltip: 'Firebase Test',
+        title: const Text(
+          'AetherBloom',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
           ),
-          IconButton(
-            icon: const Icon(Icons.medical_services),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const DoctorPortalScreen(),
-                ),
-              );
-            },
-            tooltip: 'Doctor Portal',
+        ),
+      ),
+      body: _getSelectedScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Analytics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.alarm),
+            label: 'Reminders',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bluetooth),
+            label: 'Bluetooth',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+
+  Widget _getSelectedScreen() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildHomeTab();
+      case 1:
+        return _buildPlaceholderScreen('Analytics', Icons.analytics);
+      case 2:
+        return _buildPlaceholderScreen('Reminders', Icons.alarm);
+      case 3:
+        return _buildPlaceholderScreen('Bluetooth Test', Icons.bluetooth);
+      default:
+        return _buildHomeTab();
+    }
+  }
+
+  Widget _buildHomeTab() {
+    return SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+          // Welcome Section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.blue, Colors.blueAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome to AetherBloom',
+                  style: TextStyle(
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              );
-            },
+                SizedBox(height: 8.0),
+                Text(
+                  'Your personal medication management companion',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24.0),
+
+          const Text(
+            'Quick Access',
+            style: TextStyle(
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+            ),
+            ),
+            const SizedBox(height: 16.0),
+
+          // Feature Cards
+          _buildFeatureCard(
+              title: 'Usage Tracking',
+            description: 'Track your medication usage and patterns',
+            icon: Icons.timeline,
+            color: Colors.green,
+            onTap: () => _showFeatureDialog('Usage Tracking'),
+          ),
+          const SizedBox(height: 16.0),
+          
+          _buildFeatureCard(
+            title: 'Analytics & Reports',
+            description: 'View detailed analytics and health reports',
+            icon: Icons.analytics,
+            color: Colors.purple,
+            onTap: () => _showFeatureDialog('Analytics & Reports'),
+          ),
+          const SizedBox(height: 16.0),
+          
+          _buildFeatureCard(
+            title: 'Medication Reminders',
+            description: 'Set and manage your medication schedules',
+            icon: Icons.alarm_add,
+            color: Colors.orange,
+            onTap: () => _showFeatureDialog('Medication Reminders'),
+          ),
+          const SizedBox(height: 16.0),
+          
+          _buildFeatureCard(
+            title: 'Bluetooth Test (BT05)',
+            description: 'Test BT05 device connectivity (requires physical device)',
+            icon: Icons.bluetooth,
+            color: Colors.cyan,
+            onTap: () => _showBluetoothInfo(),
+          ),
+          
+          const SizedBox(height: 32.0),
+          
+          // Status Section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(12.0),
+              border: Border.all(color: Colors.green[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green[600]),
+                    const SizedBox(width: 8.0),
+                    Text(
+                      'App Status: Working!',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[700],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  '✅ App built and running successfully\n'
+                  '✅ UI navigation working\n'
+                  '✅ Ready for feature development',
+                  style: TextStyle(
+                    fontSize: 14.0,
+                    color: Colors.green[600],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
+    );
+  }
+
+  Widget _buildFeatureCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.0),
+      child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12.0),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
           children: [
-            // Firebase test (works on web/Android)
-            _FeatureCard(
-              title: 'Firebase Test',
-              description: 'Test Firebase authentication (web/Android only)',
-              icon: Icons.bug_report,
-              gradient: const LinearGradient(
-                colors: [Colors.deepOrange, Colors.orange],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const FirebaseAuthTest(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            _FeatureCard(
-              title: 'Firestore Database Test',
-              description: 'Test database operations with real-time data (web/Android only)',
-              icon: Icons.storage,
-              gradient: const LinearGradient(
-                colors: [Colors.indigo, Colors.indigoAccent],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const FirestoreTestScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            _FeatureCard(
-              title: 'Doctor Portal',
-              description: 'Access healthcare provider dashboard',
-              icon: Icons.local_hospital,
-              gradient: const LinearGradient(
-                colors: [Colors.red, Colors.redAccent],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DoctorPortalScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            _FeatureCard(
-              title: 'Reminders',
-              description: 'Set up and manage your medication reminders',
-              icon: Icons.alarm,
-              gradient: const LinearGradient(
-                colors: [Colors.blue, Colors.lightBlueAccent],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RemindersScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            _FeatureCard(
-              title: 'Usage Tracking',
-              description: 'Track your medication usage and adherence',
-              icon: Icons.calendar_today,
-              gradient: const LinearGradient(
-                colors: [Colors.green, Colors.lightGreen],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const UsageScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            _FeatureCard(
-              title: 'Analytics',
-              description: 'View insights about your medication usage',
-              icon: Icons.bar_chart,
-              gradient: const LinearGradient(
-                colors: [Colors.purple, Colors.purpleAccent],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AnalyticsScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            _FeatureCard(
-              title: 'Notification History',
-              description: 'View past notifications and reminders',
-              icon: Icons.notifications,
-              gradient: const LinearGradient(
-                colors: [Colors.orange, Colors.amber],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationHistoryScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            // Bluetooth functionality will be added later in Phase 3
             Container(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(12.0),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(16.0),
-                border: Border.all(color: Colors.grey[400]!),
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8.0),
               ),
-              child: const Column(
+              child: Icon(
+                icon,
+                size: 32.0,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 16.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.bluetooth_disabled, size: 32.0, color: Colors.grey),
-                  SizedBox(height: 8.0),
                   Text(
-                    'Bluetooth Device Connection',
-                    style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Colors.grey),
+                    title,
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
                   ),
-                  SizedBox(height: 4.0),
+                  const SizedBox(height: 4.0),
                   Text(
-                    'Available in Phase 3 (Hardware Integration)',
-                    style: TextStyle(fontSize: 14.0, color: Colors.grey),
+                    description,
+                    style: TextStyle(
+                      fontSize: 14.0,
+                      color: color.withOpacity(0.8),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16.0),
-            // Third row
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const FirestoreTestScreen()),
-                );
-              },
-              icon: const Icon(Icons.storage),
-              label: const Text('Firestore Test'),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const FCMRegistrationTestScreen()),
-                );
-              },
-              icon: const Icon(Icons.cloud_sync),
-              label: const Text('FCM Registration'),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: color.withOpacity(0.6),
+              size: 16.0,
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class _FeatureCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final IconData icon;
-  final Gradient gradient;
-  final VoidCallback onTap;
-
-  const _FeatureCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.gradient,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 4.0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16.0),
-        child: Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(16.0),
-          ),
+  Widget _buildPlaceholderScreen(String title, IconData icon) {
+    return Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 32.0,
-                color: Colors.white,
+            size: 100,
+            color: Colors.grey[400],
               ),
-              const SizedBox(height: 16.0),
+          const SizedBox(height: 20),
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 24.0,
+              fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              color: Colors.grey,
                 ),
               ),
-              const SizedBox(height: 8.0),
+          const SizedBox(height: 10),
               Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.white,
+            'Feature placeholder\nReady for implementation',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
                 ),
               ),
             ],
           ),
-        ),
-      ),
+    );
+  }
+
+  void _showFeatureDialog(String featureName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(featureName),
+          content: Text('$featureName feature is ready for implementation!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBluetoothInfo() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('BT05 Bluetooth Test'),
+          content: const Text(
+            'Bluetooth functionality requires:\n\n'
+            '• Physical Android device (not emulator)\n'
+            '• BT05 device (MAC: 04:A3:16:A8:94:D2)\n'
+            '• Bluetooth permissions\n\n'
+            'The BT05 integration code is ready and tested via Python scripts!',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

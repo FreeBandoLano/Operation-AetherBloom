@@ -10,9 +10,12 @@ import 'screens/settings_screen.dart';
 import 'screens/usage_screen.dart';
 import 'screens/doctor_portal_screen.dart';
 import 'screens/firestore_test_screen.dart';
+import 'screens/fcm_registration_test_screen.dart';
+import 'screens/notification_test_screen.dart';
 import 'services/medication_service.dart';
 import 'services/notification_service.dart';
 import 'services/firestore_service.dart';
+import 'services/web_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,11 +49,31 @@ void main() async {
     print('🤖 Or: flutter run -d android (for Android testing)');
   }
   
-  // Initialize services (temporarily commented out for Android testing)
+  // Initialize services
+  try {
+    print('🔔 Initializing notification service...');
+    if (kIsWeb) {
+      // Don't await web notification service - initialize it in the background
+      // so it doesn't block the UI from loading
+      final webNotificationService = WebNotificationService();
+      webNotificationService.initialize().then((_) {
+        print('🌐 Web Notification Service initialized successfully!');
+      }).catchError((e) {
+        print('❌ Web Notification Service initialization failed: $e');
+      });
+      print('🌐 Web Notification Service initialization started (non-blocking)');
+    } else {
+      final notificationService = NotificationService();
+      await notificationService.initialize();
+      print('🔔 Non-web NotificationService initialized successfully!');
+    }
+  } catch (e) {
+    print('❌ Notification service initialization failed: $e');
+  }
+  
+  // Initialize other services (temporarily commented out for Android testing)
   // final medicationService = MedicationService();
-  // final notificationService = NotificationService();
   // await medicationService.initialize();
-  // await notificationService.initialize();
   
   runApp(const MyApp());
 }
@@ -125,9 +148,9 @@ class HomeScreen extends StatelessWidget {
           children: [
             // Firebase test (works on web/Android)
             _FeatureCard(
-              title: 'Firebase Test',
-              description: 'Test Firebase authentication (web/Android only)',
-              icon: Icons.bug_report,
+              title: 'User Authentication',
+              description: 'Login and manage your account',
+              icon: Icons.person,
               gradient: const LinearGradient(
                 colors: [Colors.deepOrange, Colors.orange],
               ),
@@ -142,25 +165,8 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16.0),
             _FeatureCard(
-              title: 'Firestore Database Test',
-              description: 'Test database operations with real-time data (web/Android only)',
-              icon: Icons.storage,
-              gradient: const LinearGradient(
-                colors: [Colors.indigo, Colors.indigoAccent],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const FirestoreTestScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16.0),
-            _FeatureCard(
               title: 'Doctor Portal',
-              description: 'Access healthcare provider dashboard',
+              description: 'Healthcare provider dashboard',
               icon: Icons.local_hospital,
               gradient: const LinearGradient(
                 colors: [Colors.red, Colors.redAccent],
@@ -176,8 +182,8 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16.0),
             _FeatureCard(
-              title: 'Reminders',
-              description: 'Set up and manage your medication reminders',
+              title: 'Medication Reminders',
+              description: 'Set up and manage your medication schedule',
               icon: Icons.alarm,
               gradient: const LinearGradient(
                 colors: [Colors.blue, Colors.lightBlueAccent],
@@ -194,8 +200,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 16.0),
             _FeatureCard(
               title: 'Usage Tracking',
-              description: 'Track your medication usage and adherence',
-              icon: Icons.calendar_today,
+              description: 'Track your inhaler usage and adherence',
+              icon: Icons.insights,
               gradient: const LinearGradient(
                 colors: [Colors.green, Colors.lightGreen],
               ),
@@ -210,8 +216,8 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16.0),
             _FeatureCard(
-              title: 'Analytics',
-              description: 'View insights about your medication usage',
+              title: 'Analytics Dashboard',
+              description: 'View insights about your medication patterns',
               icon: Icons.bar_chart,
               gradient: const LinearGradient(
                 colors: [Colors.purple, Colors.purpleAccent],
@@ -227,46 +233,22 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16.0),
             _FeatureCard(
-              title: 'Notification History',
-              description: 'View past notifications and reminders',
-              icon: Icons.notifications,
+              title: 'Notification Test',
+              description: 'Test notification system and scheduled reminders',
+              icon: Icons.notification_add,
               gradient: const LinearGradient(
-                colors: [Colors.orange, Colors.amber],
+                colors: [Colors.teal, Colors.cyan],
               ),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const NotificationHistoryScreen(),
+                    builder: (context) => const NotificationTestScreen(),
                   ),
                 );
               },
             ),
             const SizedBox(height: 16.0),
-            // Bluetooth functionality will be added later in Phase 3
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(16.0),
-                border: Border.all(color: Colors.grey[400]!),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.bluetooth_disabled, size: 32.0, color: Colors.grey),
-                  SizedBox(height: 8.0),
-                  Text(
-                    'Bluetooth Device Connection',
-                    style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Colors.grey),
-                  ),
-                  SizedBox(height: 4.0),
-                  Text(
-                    'Available in Phase 3 (Hardware Integration)',
-                    style: TextStyle(fontSize: 14.0, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
